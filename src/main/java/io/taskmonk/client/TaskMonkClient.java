@@ -172,7 +172,7 @@ public class TaskMonkClient {
     private void waitForCompletion(String jobId) throws Exception {
         JobProgressResponse jobProgressResponse = getJobProgress(jobId);
         while (!jobProgressResponse.isCompleted()) {
-            Thread.sleep(1000);
+            Thread.sleep(5000);
             jobProgressResponse = getJobProgress(jobId);
         }
         return;
@@ -259,7 +259,7 @@ public class TaskMonkClient {
 
     public Boolean isProcessComplete(String batchId) throws Exception {
         BatchStatus batchStatus = getBatchStatus(batchId);
-        return batchStatus.getCompleted() == batchStatus.getTotal();
+        return batchStatus.getCompleted().equals(batchStatus.getTotal());
     }
 
     public Boolean isUploadComplete(String batchId) throws Exception {
@@ -267,15 +267,16 @@ public class TaskMonkClient {
         return jobResponse.isCompleted();
 
     }
+//    public TaskMonkClient(String projectId, String server, OAuthClientCredentials credentials) {
+//        this(projectId, server, 80 , credentials);
+//
+//    }
+
     public TaskMonkClient(String projectId, String server, OAuthClientCredentials credentials) {
         this.projectId = projectId;
         this.credentials = credentials;
-        if (server.startsWith("http")) {
-            this.httpHost = new HttpHost(server);
-        } else {
-            httpHost = new HttpHost(server, 80, "http");
-
-        }
+        this.httpHost = HttpHost.create(server);
     }
+
 
 }

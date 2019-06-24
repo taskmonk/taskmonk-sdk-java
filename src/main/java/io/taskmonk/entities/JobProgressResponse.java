@@ -23,6 +23,6 @@ public class JobProgressResponse {
     }
 
     public Boolean isCompleted() {
-        return total == completed;
+        return total.equals(completed);
     }
 }
