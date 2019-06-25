@@ -200,7 +200,43 @@ public class TaskMonkClient {
         return importResponse;
 
     }
+    public TaskImportResponse uploadTasksToBatch(String batchId, File file) throws  Exception
+    {
+        String path = file.getAbsolutePath();
+        String fileType = FilenameUtils.getExtension(path);
+        logger.debug("filetype {}", fileType);
+        byte[] bytes = Files.readAllBytes(file.toPath());
+        ByteArrayOutputStream arrOutputStream = new ByteArrayOutputStream();
+        GZIPOutputStream zipOutputStream = new GZIPOutputStream(arrOutputStream);
+        zipOutputStream.write(bytes);
+        zipOutputStream.close();
+        arrOutputStream.close();
+        byte[] output = arrOutputStream.toByteArray();
+        String encoded = Base64.getEncoder().encodeToString(output);
 
+        logger.debug("Uploading {} bytes", encoded.length());
+        URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import");
+        builder.addParameter("fileType", fileType);
+        HttpPost post = new HttpPost(builder.build());
+        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
+
+        StringEntity stringEntity = new StringEntity(encoded);
+        post.setEntity(stringEntity);
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .build();
+        httpclient.start();
+        Future<HttpResponse> future = httpclient.execute(post, null);
+        HttpResponse response = future.get();
+        String content = EntityUtils.toString(response.getEntity());
+
+        httpclient.close();
+
+        ObjectMapper mapper = new ObjectMapper();
+        TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
+        System.out.println("importResponse = " + importResponse);
+
+        return importResponse;
+    }
 
     private void waitForCompletion(String jobId) throws Exception {
         JobProgressResponse jobProgressResponse = getJobProgress(jobId);

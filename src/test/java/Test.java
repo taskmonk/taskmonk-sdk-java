@@ -4,6 +4,7 @@
 import io.taskmonk.auth.OAuthClientCredentials;
 import io.taskmonk.client.TaskMonkClient;
 import io.taskmonk.entities.Notification;
+import io.taskmonk.entities.TaskImportResponse;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ public class Test {
          * Upload the tasks csv to a new batch that will be created with name batchName
          */
         //String batchId = client.uploadTasks("dummy_batch_name", new File("/Users/sampath/tmp.csv")).batchId;
+        TaskImportResponse resp = client.uploadTasksToBatch("3", new File("/home/aditya/Downloads/newfile.csv"));
+        System.out.println("got taskinpmportresponse "+ resp);
 
         /*
          * check the returned batch id
