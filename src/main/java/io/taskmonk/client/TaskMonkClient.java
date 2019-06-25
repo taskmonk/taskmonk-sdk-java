@@ -98,6 +98,11 @@ public class TaskMonkClient {
         return get;
     }
 
+
+    /**
+     * Create a new batch in an existing project
+     * @param batchName . name of the batch to be created
+     */
     public String createBatch(String batchName) throws Exception {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch");
         HttpPost post = new HttpPost(builder.build());
@@ -126,6 +131,15 @@ public class TaskMonkClient {
 
     }
 
+
+    /**
+     * update the details of an existing batch
+     * @param batchId - id of an existing batch
+     * @param batchName - name of new batch
+     * @param priority - priority of batch
+     * @param comments - comments in new batch
+     * @param notifications - notifications of a new batch
+     */
     public String updateBatch(String batchId, String batchName, Short priority, String comments, List<Notification> notifications) throws Exception{
         logger.debug("updating batch  {}", batchId);
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId);
@@ -158,7 +172,11 @@ public class TaskMonkClient {
 
     }
 
-
+    /**
+     * Create a new batch in an existing project and add tasks to it
+     * @param batchName - name of the batch to be created
+     * @param file - file of the tasks to be added
+     */
     public TaskImportResponse uploadTasks(String batchName, File file) throws Exception  {
         logger.debug("Uploading tasks to batch {}", batchName);
 
@@ -201,10 +219,12 @@ public class TaskMonkClient {
 
     }
 
-    // to test
 
-
-    public TaskImportResponse uploadTasksUrl(String batchName, String taskUrl) throws  Exception {
+    /**
+     * Create a new batch in an existing project and add tasks to it from an accessible url
+     * @param batchName - name of the batch to be created
+     * @param taskUrl - url of the file from which the tasks will be imported
+     */    public TaskImportResponse uploadTasksUrl(String batchName, String taskUrl) throws  Exception {
 
         String batchId = createBatch(batchName);
 
@@ -227,13 +247,20 @@ public class TaskMonkClient {
 
         httpclient.close();
 
-        
+
         TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
         System.out.println("importResponse = " + importResponse);
 
         return importResponse;
 
     }
+
+
+    /**
+     * Add tasks to an existing batch
+     * @param batchId - batch id of an existing batch to which the tasks are to be added
+     * @param file - file of the tasks to be added
+     */
     public TaskImportResponse uploadTasksToBatch(String batchId, File file) throws  Exception
     {
         String path = file.getAbsolutePath();
@@ -271,7 +298,13 @@ public class TaskMonkClient {
 
         return importResponse;
     }
-        //to test
+
+
+    /**
+     * Add tasks to an existing batch from an accessible url
+     * @param batchId - batch id of the batch to which the tasks are to be added
+     * @param taskUrl - url of the file from which the tasks would be imported
+     */
     public TaskImportResponse uploadTasksUrlToBatch(String batchId, String taskUrl) throws Exception
     {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import/url");
@@ -301,6 +334,10 @@ public class TaskMonkClient {
 
 
     }
+    /**
+     * Add an external task
+     * @param task - the task to be added
+     */
     public String addTask(Task task) throws Exception {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/task/external");
 
@@ -400,12 +437,22 @@ public class TaskMonkClient {
 
     }
 
+
+    /**
+     * Get the progress of a job
+     * @param jobId - job id of the job
+     */
     public JobProgressResponse getJobProgress(String jobId) throws Exception {
         String url = "/api/project/" + projectId + "/job/" + jobId + "/status";
         HttpGet httpGet = getHttpGet(url);
         JobProgressResponse getResponse = getResponse(httpGet, JobProgressResponse.class);
         return getResponse;
     }
+
+    /**
+     * Get the progress of batch
+     * @param batchId - id of the batch
+     */
     public JobProgressResponse getJobProgressBatch(String batchId) throws Exception {
         String url = "/api/project/" + projectId + "/job/" + batchId + "/status";
         List<NameValuePair> parameters = new ArrayList<NameValuePair>();
@@ -414,18 +461,32 @@ public class TaskMonkClient {
         JobProgressResponse getResponse = getResponse(httpGet, JobProgressResponse.class);
         return getResponse;
     }
+
+    /**
+     * Get the status of the batch
+     * @param batchId - id of the batch
+     */
+
     public BatchStatus getBatchStatus(String batchId) throws Exception {
         String url  = "/api/project/v2/" + projectId + "/batch/" + batchId + "/status";
         HttpGet httpGet = getHttpGet(url);
         BatchStatus getResponse = getResponse(httpGet, BatchStatus.class);
         return getResponse;
     }
-
+    /**
+     * To check if a process is complete
+     * @param batchId - id of the batch
+     */
     public Boolean isProcessComplete(String batchId) throws Exception {
         BatchStatus batchStatus = getBatchStatus(batchId);
         return batchStatus.getCompleted().equals(batchStatus.getTotal());
     }
 
+
+    /**
+     * To check if the upload is complete or not
+     * @param batchId - id of the batch
+     */
     public Boolean isUploadComplete(String batchId) throws Exception {
         JobProgressResponse jobResponse = getJobProgressBatch(batchId);
         return jobResponse.isCompleted();
