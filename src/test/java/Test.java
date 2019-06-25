@@ -4,6 +4,7 @@
 import io.taskmonk.auth.OAuthClientCredentials;
 import io.taskmonk.client.TaskMonkClient;
 import io.taskmonk.entities.Notification;
+import io.taskmonk.entities.Task;
 import io.taskmonk.entities.TaskImportResponse;
 
 import java.io.File;
@@ -25,8 +26,17 @@ public class Test {
          * Upload the tasks csv to a new batch that will be created with name batchName
          */
         //String batchId = client.uploadTasks("dummy_batch_name", new File("/Users/sampath/tmp.csv")).batchId;
-        TaskImportResponse resp = client.uploadTasksToBatch("3", new File("/home/aditya/Downloads/newfile.csv"));
-        System.out.println("got taskinpmportresponse "+ resp);
+        //TaskImportResponse resp = client.uploadTasksToBatch("3", new File("/home/aditya/Downloads/newfile.csv"));
+        //System.out.println("got taskinpmportresponse "+ resp);
+
+
+        String url = "http://download1474.mediafire.com/46usqtx2k3gg/5sw0pwol3662q7b/Primenow_Excel_50.xlsx";
+        TaskImportResponse taskresp = client.uploadTasksUrl("new_test_batch", url);
+        System.out.println(" got response for url uplaod of tasks "+ taskresp);
+
+
+
+
 
         /*
          * check the returned batch id
@@ -58,7 +68,12 @@ public class Test {
          */
         //client.getBatchOutput(batchId, "CSV", "/tmp/output.csv");
 
-        List<Notification> n = new ArrayList<Notification>();
+
+        /*Task task = new Task("1","8","3", new HashMap<String, String>());
+        String id = client.addTask(task);
+        System.out.println(" added external task "+ id);
+*/
+        /*List<Notification> n = new ArrayList<Notification>();
         Map<String, String> map = new HashMap<String, String>() ;
 
 
@@ -67,7 +82,7 @@ public class Test {
         short a =2;
         String updatedBatchId = client.updateBatch("3","dummy_batch_name", a , " no comments", n);
         System.out.println("updated batch id "+ updatedBatchId);
-        System.out.println("Downloaded to /tmp/output.csv");
+        System.out.println("Downloaded to /tmp/output.csv");*/
     }
 }
 

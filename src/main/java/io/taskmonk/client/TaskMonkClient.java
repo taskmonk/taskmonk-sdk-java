@@ -200,6 +200,40 @@ public class TaskMonkClient {
         return importResponse;
 
     }
+
+    // to test
+
+
+    public TaskImportResponse uploadTasksUrl(String batchName, String taskUrl) throws  Exception {
+
+        String batchId = createBatch(batchName);
+
+        URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import/url");
+        HttpPost post = new HttpPost(builder.build());
+        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
+        post.addHeader("Content-type", "application/json");
+
+        ImportUrl importUrl = new ImportUrl(taskUrl);
+        ObjectMapper mapper = new ObjectMapper();
+
+        StringEntity entity = new StringEntity(mapper.writeValueAsString(importUrl));
+        post.setEntity(entity);
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .build();
+        httpclient.start();
+        Future<HttpResponse> future = httpclient.execute(post, null);
+        HttpResponse response = future.get();
+        String content = EntityUtils.toString(response.getEntity());
+
+        httpclient.close();
+
+        
+        TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
+        System.out.println("importResponse = " + importResponse);
+
+        return importResponse;
+
+    }
     public TaskImportResponse uploadTasksToBatch(String batchId, File file) throws  Exception
     {
         String path = file.getAbsolutePath();
@@ -236,6 +270,65 @@ public class TaskMonkClient {
         System.out.println("importResponse = " + importResponse);
 
         return importResponse;
+    }
+        //to test
+    public TaskImportResponse uploadTasksUrlToBatch(String batchId, String taskUrl) throws Exception
+    {
+        URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import/url");
+        HttpPost post = new HttpPost(builder.build());
+        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
+        post.addHeader("Content-type", "application/json");
+        ObjectMapper mapper = new ObjectMapper();
+        ImportUrl importUrl = new ImportUrl(taskUrl);
+
+        StringEntity entity = new StringEntity(mapper.writeValueAsString(importUrl));
+        post.setEntity(entity);
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .build();
+        httpclient.start();
+        Future<HttpResponse> future = httpclient.execute(post, null);
+        HttpResponse response = future.get();
+        String content = EntityUtils.toString(response.getEntity());
+
+        httpclient.close();
+
+
+        TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
+        System.out.println("importResponse = " + importResponse);
+
+        return importResponse;
+
+
+
+    }
+    public String addTask(Task task) throws Exception {
+        URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/task/external");
+
+        ObjectMapper mapper = new ObjectMapper();
+        String body = mapper.writeValueAsString(task);
+        StringEntity entity = new StringEntity(body);
+
+        HttpPost post = new HttpPost(builder.build());
+        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
+        post.addHeader("Content-type", "application/json");
+
+        post.setEntity(entity);
+
+
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .build();
+        httpclient.start();
+        Future<HttpResponse> future = httpclient.execute(post, null);
+        HttpResponse response = future.get();
+        String content = EntityUtils.toString(response.getEntity());
+
+        httpclient.close();
+
+        Id returnedTaskId = mapper.readValue(content, Id.class);
+        logger.debug("batch id = " + returnedTaskId);
+        return returnedTaskId.id;
+
+
     }
 
     private void waitForCompletion(String jobId) throws Exception {
