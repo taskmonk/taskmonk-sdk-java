@@ -15,6 +15,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
@@ -125,6 +126,38 @@ public class TaskMonkClient {
 
     }
 
+    public String updateBatch(String batchId, String batchName, Short priority, String comments, List<Notification> notifications) throws Exception{
+        logger.debug("updating batch  {}", batchId);
+        URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId);
+        HttpPut put = new HttpPut(builder.build());
+        put.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
+        put.addHeader("Content-type", "application/json");
+        NewBatchData newBatchData = new NewBatchData(batchName);
+        newBatchData.setComments(comments);
+        newBatchData.setNotifications(notifications);
+        newBatchData.setPriority(priority);
+        ObjectMapper mapper = new ObjectMapper();
+        String body = mapper.writeValueAsString(newBatchData);
+        logger.debug(" got batch content {} ", body);
+        StringEntity entity = new StringEntity(body);
+        put.setEntity(entity);
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .build();
+        httpclient.start();
+        Future<HttpResponse> future = httpclient.execute(put, null);
+        HttpResponse response = future.get();
+        httpclient.close();
+        String content = EntityUtils.toString(response.getEntity());
+
+        Id returnedBatchId = mapper.readValue(content, Id.class);
+        logger.debug("batch id = " + returnedBatchId);
+        return returnedBatchId.id;
+
+
+
+
+    }
+
 
     public TaskImportResponse uploadTasks(String batchName, File file) throws Exception  {
         logger.debug("Uploading tasks to batch {}", batchName);
@@ -202,6 +235,8 @@ public class TaskMonkClient {
         downloadFile(batchOutput.getFileUrl(), outputPath);
 
     }
+
+
 
     private <T> T getResponse(HttpPost post, Class<T> clazz) throws ExecutionException, InterruptedException, IOException {
         logger.debug("Running post {}", post);
