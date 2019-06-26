@@ -25,8 +25,8 @@ public class Test {
         /*
          * Upload the tasks csv to a new batch that will be created with name batchName
          */
-//        String batchId = client.uploadTasks("dummy_batch_name", new File("/Users/sampath/tmp.csv")).batchId;
-        String batchId = client.uploadTasksUrl("dummy_batch_name", "https://tmpupload.blob.core.windows.net/test/tmp.csv", "CSV").batchId;
+        String batchId = client.uploadTasks("dummy_batch_name", new File("/Users/sampath/tmp.csv")).batchId;
+//        String batchId = client.uploadTasksUrl("dummy_batch_name", "https://tmpupload.blob.core.windows.net/test/tmp.csv", "CSV").batchId;
         //TaskImportResponse resp = client.uploadTasksToBatch("3", new File("/home/aditya/Downloads/newfile.csv"));
         //System.out.println("got taskinpmportresponse "+ resp);
 

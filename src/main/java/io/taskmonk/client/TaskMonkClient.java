@@ -8,10 +8,7 @@ import io.taskmonk.clientexceptions.StatusConstants;
 import io.taskmonk.clientexceptions.UnhandledException;
 import io.taskmonk.entities.*;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
+import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -140,6 +137,31 @@ public class TaskMonkClient {
             throw handleException(response.getStatusLine().getStatusCode());
     }
 
+    private <T> T invoke(HttpUriRequest request, Class<T> clazz) throws Exception {
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .build();
+        request.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
+        httpclient.start();
+        Future<HttpResponse> httpResponse = httpclient.execute(request, null);
+        logger.debug("Invoking : {} ", request);
+        HttpResponse response = httpResponse.get();
+        try {
+
+            if (response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+                    response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
+                String content = EntityUtils.toString(response.getEntity());
+                ObjectMapper mapper = new ObjectMapper();
+                T result = mapper.readValue(content, clazz);
+                logger.debug("result {}", result);
+                return result;
+            } else {
+                throw handleException(response.getStatusLine().getStatusCode());
+            }
+        } finally {
+            httpclient.close();
+        }
+
+    }
 
     /**
      * update the details of an existing batch
@@ -164,25 +186,7 @@ public class TaskMonkClient {
         logger.debug(" got batch content {} ", body);
         StringEntity entity = new StringEntity(body);
         put.setEntity(entity);
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(put, null);
-        HttpResponse response = future.get();
-        httpclient.close();
-        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode())
-        {
-        String content = EntityUtils.toString(response.getEntity());
-
-        Id returnedBatchId = mapper.readValue(content, Id.class);
-        logger.debug("batch id = " + returnedBatchId);
-        return returnedBatchId.id;}
-        else
-            throw handleException(response.getStatusLine().getStatusCode());
-
-
-
+        return invoke(put, Id.class).id;
     }
 
     /**
@@ -215,27 +219,7 @@ public class TaskMonkClient {
 
         StringEntity stringEntity = new StringEntity(encoded);
         post.setEntity(stringEntity);
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(post, null);
-        HttpResponse response = future.get();
-        String content = EntityUtils.toString(response.getEntity());
-
-        httpclient.close();
-
-        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode())
-        {
-        ObjectMapper mapper = new ObjectMapper();
-        TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
-        System.out.println("importResponse = " + importResponse);
-
-        return importResponse;
-        }
-
-        else
-            throw handleException(response.getStatusLine().getStatusCode());
+        return invoke(post, TaskImportResponse.class);
 
     }
 
@@ -259,25 +243,8 @@ public class TaskMonkClient {
 
         StringEntity entity = new StringEntity(mapper.writeValueAsString(importUrl));
         post.setEntity(entity);
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(post, null);
-        HttpResponse response = future.get();
-        String content = EntityUtils.toString(response.getEntity());
-
-        httpclient.close();
-
-        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
-            TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
-            System.out.println("importResponse = " + importResponse);
-
-            return importResponse;
-        }
-        else
-            throw handleException(response.getStatusLine().getStatusCode());
-     }
+        return invoke(post, TaskImportResponse.class);
+    }
 
 
     /**
@@ -303,29 +270,10 @@ public class TaskMonkClient {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import");
         builder.addParameter("fileType", fileType);
         HttpPost post = new HttpPost(builder.build());
-        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
-
         StringEntity stringEntity = new StringEntity(encoded);
         post.setEntity(stringEntity);
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(post, null);
-        HttpResponse response = future.get();
-        String content = EntityUtils.toString(response.getEntity());
+        return invoke(post, TaskImportResponse.class);
 
-        httpclient.close();
-        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
-
-            ObjectMapper mapper = new ObjectMapper();
-            TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
-            System.out.println("importResponse = " + importResponse);
-
-            return importResponse;
-        }
-        else
-            throw handleException(response.getStatusLine().getStatusCode());
     }
 
 
@@ -345,25 +293,8 @@ public class TaskMonkClient {
 
         StringEntity entity = new StringEntity(mapper.writeValueAsString(importUrl));
         post.setEntity(entity);
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(post, null);
-        HttpResponse response = future.get();
-        String content = EntityUtils.toString(response.getEntity());
 
-        httpclient.close();
-
-        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
-            TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
-            System.out.println("importResponse = " + importResponse);
-
-            return importResponse;
-
-        }
-        else
-            throw handleException(response.getStatusLine().getStatusCode());
+        return invoke(post, TaskImportResponse.class);
     }
     /**
      * Add an external task
@@ -382,25 +313,7 @@ public class TaskMonkClient {
         post.addHeader("Content-type", "application/json");
 
         post.setEntity(entity);
-
-
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(post, null);
-        HttpResponse response = future.get();
-        String content = EntityUtils.toString(response.getEntity());
-
-        httpclient.close();
-        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
-
-            Id returnedTaskId = mapper.readValue(content, Id.class);
-            logger.debug("batch id = " + returnedTaskId);
-            return returnedTaskId.id;
-        }
-        else
-            throw handleException(response.getStatusLine().getStatusCode());
+        return invoke(post, Id.class).id;
 
     }
 
@@ -430,37 +343,13 @@ public class TaskMonkClient {
         String content =  mapper.writeValueAsString(fieldNames);
         HttpPost post = getHttpPost(url, parameters, ContentType.APPLICATION_JSON);
         post.setEntity(new StringEntity(content));
-        BatchOutput batchOutput = getResponse(post, BatchOutput.class);
+        BatchOutput batchOutput = invoke(post, BatchOutput.class);
         logger.debug("batchOutput = {}", batchOutput);
 
         waitForCompletion(batchOutput.getJobId());
         downloadFile(batchOutput.getFileUrl(), outputPath);
 
     }
-
-
-
-    private <T> T getResponse(HttpPost post, Class<T> clazz) throws Exception {
-        logger.debug("Running post {}", post);
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(post, null);
-        HttpResponse response = future.get();
-        String content = EntityUtils.toString(response.getEntity());
-        logger.debug("Got response {}", content);
-        ObjectMapper mapper = new ObjectMapper();
-        T result = mapper.readValue(content, clazz);
-        httpclient.close();
-        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
-            return result;
-        }
-        else
-            throw handleException(response.getStatusLine().getStatusCode());
-
-    }
-
 
     private  Exception handleException(int statusCode)   {
 
@@ -473,39 +362,8 @@ public class TaskMonkClient {
         else
             return new UnhandledException(StatusConstants.StatusCode.UNHANDLED.getDisplay());
 
-
-
-
-
-
     }
 
-
-   private <T> T getResponse(HttpGet get, Class<T> clazz) throws Exception {
-        logger.debug("Running get {}", get);
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(get, null);
-        HttpResponse response = future.get();
-        String content = EntityUtils.toString(response.getEntity());
-        ObjectMapper mapper = new ObjectMapper();
-        T result = mapper.readValue(content, clazz);
-        logger.debug("Got response {}", result);
-        httpclient.close();
-       if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-               response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
-           return result;
-       }
-       else {
-           Exception ex = handleException(response.getStatusLine().getStatusCode());
-           if(ex != null)
-               throw ex;
-           else
-               throw new Exception("Unhandled error occured");
-       }
-
-    }
 
 
     /**
@@ -515,7 +373,7 @@ public class TaskMonkClient {
     public JobProgressResponse getJobProgress(String jobId) throws Exception {
         String url = "/api/project/" + projectId + "/job/" + jobId + "/status";
         HttpGet httpGet = getHttpGet(url);
-        JobProgressResponse getResponse = getResponse(httpGet, JobProgressResponse.class);
+        JobProgressResponse getResponse = invoke(httpGet, JobProgressResponse.class);
         return getResponse;
     }
 
@@ -528,7 +386,7 @@ public class TaskMonkClient {
         List<NameValuePair> parameters = new ArrayList<NameValuePair>();
         parameters.add(new BasicNameValuePair("input_type", "batch"));
         HttpGet httpGet = getHttpGet(url, parameters);
-        JobProgressResponse getResponse = getResponse(httpGet, JobProgressResponse.class);
+        JobProgressResponse getResponse = invoke(httpGet, JobProgressResponse.class);
         return getResponse;
     }
 
@@ -540,7 +398,7 @@ public class TaskMonkClient {
     public BatchStatus getBatchStatus(String batchId) throws Exception {
         String url  = "/api/project/v2/" + projectId + "/batch/" + batchId + "/status";
         HttpGet httpGet = getHttpGet(url);
-        BatchStatus getResponse = getResponse(httpGet, BatchStatus.class);
+        BatchStatus getResponse = invoke(httpGet, BatchStatus.class);
         return getResponse;
     }
     /**
