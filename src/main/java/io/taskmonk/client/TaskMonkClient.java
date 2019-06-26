@@ -224,7 +224,8 @@ public class TaskMonkClient {
      * Create a new batch in an existing project and add tasks to it from an accessible url
      * @param batchName - name of the batch to be created
      * @param taskUrl - url of the file from which the tasks will be imported
-     */    public TaskImportResponse uploadTasksUrl(String batchName, String taskUrl) throws  Exception {
+     */
+    public TaskImportResponse uploadTasksUrl(String batchName, String taskUrl, String fileType) throws  Exception {
 
         String batchId = createBatch(batchName);
 
@@ -233,7 +234,7 @@ public class TaskMonkClient {
         post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         post.addHeader("Content-type", "application/json");
 
-        ImportUrl importUrl = new ImportUrl(taskUrl);
+        ImportUrl importUrl = new ImportUrl(taskUrl, fileType);
         ObjectMapper mapper = new ObjectMapper();
 
         StringEntity entity = new StringEntity(mapper.writeValueAsString(importUrl));
@@ -305,14 +306,14 @@ public class TaskMonkClient {
      * @param batchId - batch id of the batch to which the tasks are to be added
      * @param taskUrl - url of the file from which the tasks would be imported
      */
-    public TaskImportResponse uploadTasksUrlToBatch(String batchId, String taskUrl) throws Exception
+    public TaskImportResponse uploadTasksUrlToBatch(String batchId, String taskUrl, String fileType) throws Exception
     {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import/url");
         HttpPost post = new HttpPost(builder.build());
         post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         post.addHeader("Content-type", "application/json");
         ObjectMapper mapper = new ObjectMapper();
-        ImportUrl importUrl = new ImportUrl(taskUrl);
+        ImportUrl importUrl = new ImportUrl(taskUrl, fileType);
 
         StringEntity entity = new StringEntity(mapper.writeValueAsString(importUrl));
         post.setEntity(entity);
@@ -337,6 +338,7 @@ public class TaskMonkClient {
     /**
      * Add an external task
      * @param task - the task to be added
+     * @return task id of the newly created task
      */
     public String addTask(Task task) throws Exception {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/task/external");
