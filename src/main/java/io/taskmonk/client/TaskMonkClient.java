@@ -119,27 +119,10 @@ public class TaskMonkClient {
         ObjectMapper mapper = new ObjectMapper();
         String body = mapper.writeValueAsString(newBatchData);
         logger.debug("batch create content = {}", body);
-        System.out.println("body = " + body);
         StringEntity stringEntity = new StringEntity(body);
         post.setEntity(stringEntity);
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-        Future<HttpResponse> future = httpclient.execute(post, null);
 
-        System.out.println(" Status from create batch api "+future.get().getStatusLine().getStatusCode());
-        HttpResponse response = future.get();
-
-        httpclient.close();
-        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
-        response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode())
-        {String content = EntityUtils.toString(response.getEntity());
-
-        Id batchId = mapper.readValue(content, Id.class);
-        logger.debug("batch id = " + batchId);
-        return batchId.id;}
-        else
-            throw handleException(response.getStatusLine().getStatusCode());
+        return invoke(post, Id.class).id;
     }
 
     private <T> T invoke(HttpUriRequest request, Class<T> clazz) throws Exception {
