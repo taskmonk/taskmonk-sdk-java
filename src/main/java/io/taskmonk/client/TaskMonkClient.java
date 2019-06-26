@@ -102,6 +102,11 @@ public class TaskMonkClient {
     /**
      * Create a new batch in an existing project
      * @param batchName . name of the batch to be created
+     * @return {@link String} returns the id of the batch
+     * @throws  io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws  io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws  io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public String createBatch(String batchName) throws Exception {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch");
@@ -170,6 +175,11 @@ public class TaskMonkClient {
      * @param priority - priority of batch
      * @param comments - comments in new batch
      * @param notifications - notifications of a new batch
+     * @return {@link String} - returns the id of the updated batch
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws  io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws  io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public String updateBatch(String batchId, String batchName, Short priority, String comments, List<Notification> notifications) throws Exception{
         logger.debug("updating batch  {}", batchId);
@@ -193,6 +203,11 @@ public class TaskMonkClient {
      * Create a new batch in an existing project and add tasks to it
      * @param batchName - name of the batch to be created
      * @param file - file of the tasks to be added
+     * @return {@link TaskImportResponse} returns the task import response
+     * @throws  io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws  io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws  io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public TaskImportResponse uploadTasks(String batchName, File file) throws Exception  {
         logger.debug("Uploading tasks to batch {}", batchName);
@@ -228,6 +243,12 @@ public class TaskMonkClient {
      * Create a new batch in an existing project and add tasks to it from an accessible url
      * @param batchName - name of the batch to be created
      * @param taskUrl - url of the file from which the tasks will be imported
+     * @param  fileType - type of file from which the tasks would be fetched
+     * @return {@link TaskImportResponse} - returns the task import response
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public TaskImportResponse uploadTasksUrl(String batchName, String taskUrl, String fileType) throws  Exception {
 
@@ -251,6 +272,12 @@ public class TaskMonkClient {
      * Add tasks to an existing batch
      * @param batchId - batch id of an existing batch to which the tasks are to be added
      * @param file - file of the tasks to be added
+     * @return {@link TaskImportResponse} - returns the task import response
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+
      */
     public TaskImportResponse uploadTasksToBatch(String batchId, File file) throws  Exception
     {
@@ -281,6 +308,13 @@ public class TaskMonkClient {
      * Add tasks to an existing batch from an accessible url
      * @param batchId - batch id of the batch to which the tasks are to be added
      * @param taskUrl - url of the file from which the tasks would be imported
+     * @param  fileType - type of file from which the tasks would be fetched
+     * @return {@link TaskImportResponse} - returns the task import response
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     *
      */
     public TaskImportResponse uploadTasksUrlToBatch(String batchId, String taskUrl, String fileType) throws Exception
     {
@@ -300,6 +334,11 @@ public class TaskMonkClient {
      * Add an external task
      * @param task - the task to be added
      * @return task id of the newly created task
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     *
      */
     public String addTask(Task task) throws Exception {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/task/external");
@@ -329,9 +368,14 @@ public class TaskMonkClient {
 
     /**
      * Get the batch output in a local file path
-     * @param batchId
+     * @param batchId - batch id of an existing batch
      * @param outputFormat output format for the file - "CSV" or "Excel"
      * @param outputPath - path where the output file should be created
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     *
      */
     public void getBatchOutput(String batchId, String outputFormat, String outputPath) throws Exception {
         String url = "/api/project/" + projectId + "/batch/" + batchId + "/output";
@@ -369,6 +413,12 @@ public class TaskMonkClient {
     /**
      * Get the progress of a job
      * @param jobId - job id of the job
+     * @return {@link JobProgressResponse} - returns the job progress response
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     *
      */
     public JobProgressResponse getJobProgress(String jobId) throws Exception {
         String url = "/api/project/" + projectId + "/job/" + jobId + "/status";
@@ -380,6 +430,12 @@ public class TaskMonkClient {
     /**
      * Get the progress of batch
      * @param batchId - id of the batch
+     * @return {@link JobProgressResponse} - returns the job progress response
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     *
      */
     public JobProgressResponse getJobProgressBatch(String batchId) throws Exception {
         String url = "/api/project/" + projectId + "/job/" + batchId + "/status";
@@ -393,6 +449,12 @@ public class TaskMonkClient {
     /**
      * Get the status of the batch
      * @param batchId - id of the batch
+     * @return {@link BatchStatus} - returns the batch status
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     *
      */
 
     public BatchStatus getBatchStatus(String batchId) throws Exception {
@@ -404,6 +466,12 @@ public class TaskMonkClient {
     /**
      * To check if a process is complete
      * @param batchId - id of the batch
+     * @return {@link Boolean} - returns true or false depending on completion of process
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     *
      */
     public Boolean isProcessComplete(String batchId) throws Exception {
         BatchStatus batchStatus = getBatchStatus(batchId);
@@ -414,6 +482,12 @@ public class TaskMonkClient {
     /**
      * To check if the upload is complete or not
      * @param batchId - id of the batch
+     * @return {@link Boolean} - returns true or false depending upon upload status
+     * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     *
      */
     public Boolean isUploadComplete(String batchId) throws Exception {
         JobProgressResponse jobResponse = getJobProgressBatch(batchId);
