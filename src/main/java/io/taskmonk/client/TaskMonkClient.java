@@ -3,6 +3,9 @@ package io.taskmonk.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.taskmonk.auth.OAuthClientCredentials;
 import io.taskmonk.auth.TokenResponse;
+import io.taskmonk.clientexceptions.ForbiddenException;
+import io.taskmonk.clientexceptions.StatusConstants;
+import io.taskmonk.clientexceptions.UnhandledException;
 import io.taskmonk.entities.*;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.HttpEntity;
@@ -121,14 +124,20 @@ public class TaskMonkClient {
                 .build();
         httpclient.start();
         Future<HttpResponse> future = httpclient.execute(post, null);
+
+        System.out.println(" Status from create batch api "+future.get().getStatusLine().getStatusCode());
         HttpResponse response = future.get();
+
         httpclient.close();
-        String content = EntityUtils.toString(response.getEntity());
+        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+        response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode())
+        {String content = EntityUtils.toString(response.getEntity());
 
         Id batchId = mapper.readValue(content, Id.class);
         logger.debug("batch id = " + batchId);
-        return batchId.id;
-
+        return batchId.id;}
+        else
+            throw handleException(response.getStatusLine().getStatusCode());
     }
 
 
@@ -161,12 +170,16 @@ public class TaskMonkClient {
         Future<HttpResponse> future = httpclient.execute(put, null);
         HttpResponse response = future.get();
         httpclient.close();
+        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode())
+        {
         String content = EntityUtils.toString(response.getEntity());
 
         Id returnedBatchId = mapper.readValue(content, Id.class);
         logger.debug("batch id = " + returnedBatchId);
-        return returnedBatchId.id;
-
+        return returnedBatchId.id;}
+        else
+            throw handleException(response.getStatusLine().getStatusCode());
 
 
 
@@ -211,11 +224,18 @@ public class TaskMonkClient {
 
         httpclient.close();
 
+        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode())
+        {
         ObjectMapper mapper = new ObjectMapper();
         TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
         System.out.println("importResponse = " + importResponse);
 
         return importResponse;
+        }
+
+        else
+            throw handleException(response.getStatusLine().getStatusCode());
 
     }
 
@@ -247,13 +267,16 @@ public class TaskMonkClient {
 
         httpclient.close();
 
+        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
+            TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
+            System.out.println("importResponse = " + importResponse);
 
-        TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
-        System.out.println("importResponse = " + importResponse);
-
-        return importResponse;
-
-    }
+            return importResponse;
+        }
+        else
+            throw handleException(response.getStatusLine().getStatusCode());
+     }
 
 
     /**
@@ -291,12 +314,17 @@ public class TaskMonkClient {
         String content = EntityUtils.toString(response.getEntity());
 
         httpclient.close();
+        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
 
-        ObjectMapper mapper = new ObjectMapper();
-        TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
-        System.out.println("importResponse = " + importResponse);
+            ObjectMapper mapper = new ObjectMapper();
+            TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
+            System.out.println("importResponse = " + importResponse);
 
-        return importResponse;
+            return importResponse;
+        }
+        else
+            throw handleException(response.getStatusLine().getStatusCode());
     }
 
 
@@ -325,14 +353,16 @@ public class TaskMonkClient {
 
         httpclient.close();
 
+        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
+            TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
+            System.out.println("importResponse = " + importResponse);
 
-        TaskImportResponse importResponse = mapper.readValue(content, TaskImportResponse.class);
-        System.out.println("importResponse = " + importResponse);
+            return importResponse;
 
-        return importResponse;
-
-
-
+        }
+        else
+            throw handleException(response.getStatusLine().getStatusCode());
     }
     /**
      * Add an external task
@@ -360,11 +390,15 @@ public class TaskMonkClient {
         String content = EntityUtils.toString(response.getEntity());
 
         httpclient.close();
+        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
 
-        Id returnedTaskId = mapper.readValue(content, Id.class);
-        logger.debug("batch id = " + returnedTaskId);
-        return returnedTaskId.id;
-
+            Id returnedTaskId = mapper.readValue(content, Id.class);
+            logger.debug("batch id = " + returnedTaskId);
+            return returnedTaskId.id;
+        }
+        else
+            throw handleException(response.getStatusLine().getStatusCode());
 
     }
 
@@ -404,7 +438,7 @@ public class TaskMonkClient {
 
 
 
-    private <T> T getResponse(HttpPost post, Class<T> clazz) throws ExecutionException, InterruptedException, IOException {
+    private <T> T getResponse(HttpPost post, Class<T> clazz) throws Exception {
         logger.debug("Running post {}", post);
         CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
                 .build();
@@ -416,11 +450,36 @@ public class TaskMonkClient {
         ObjectMapper mapper = new ObjectMapper();
         T result = mapper.readValue(content, clazz);
         httpclient.close();
-        return result;
+        if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+                response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
+            return result;
+        }
+        else
+            throw handleException(response.getStatusLine().getStatusCode());
+
+    }
+
+
+    private  Exception handleException(int statusCode)   {
+
+        if(StatusConstants.StatusCode.FORBIDDEN.getCode() == statusCode)
+            return new ForbiddenException(StatusConstants.StatusCode.FORBIDDEN.getDisplay());
+        else  if(StatusConstants.StatusCode.INTERNALSERVERERROR.getCode() == statusCode)
+            return new ForbiddenException(StatusConstants.StatusCode.INTERNALSERVERERROR.getDisplay());
+        else  if(StatusConstants.StatusCode.NOTFOUND.getCode() == statusCode)
+            return new ForbiddenException(StatusConstants.StatusCode.NOTFOUND.getDisplay());
+        else
+            return new UnhandledException(StatusConstants.StatusCode.UNHANDLED.getDisplay());
+
+
+
+
 
 
     }
-   private <T> T getResponse(HttpGet get, Class<T> clazz) throws ExecutionException, InterruptedException, IOException {
+
+
+   private <T> T getResponse(HttpGet get, Class<T> clazz) throws Exception {
         logger.debug("Running get {}", get);
         CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
                 .build();
@@ -432,8 +491,17 @@ public class TaskMonkClient {
         T result = mapper.readValue(content, clazz);
         logger.debug("Got response {}", result);
         httpclient.close();
-        return result;
-
+       if(response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.OK.getCode() ||
+               response.getStatusLine().getStatusCode() == StatusConstants.StatusCode.CREATED.getCode()) {
+           return result;
+       }
+       else {
+           Exception ex = handleException(response.getStatusLine().getStatusCode());
+           if(ex != null)
+               throw ex;
+           else
+               throw new Exception("Unhandled error occured");
+       }
 
     }
 

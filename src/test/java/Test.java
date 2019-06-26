@@ -30,10 +30,11 @@ public class Test {
         //System.out.println("got taskinpmportresponse "+ resp);
 
 
-        String url = "http://download1474.mediafire.com/46usqtx2k3gg/5sw0pwol3662q7b/Primenow_Excel_50.xlsx";
+        /*String url = "http://download1474.mediafire.com/46usqtx2k3gg/5sw0pwol3662q7b/Primenow_Excel_50.xlsx";
         TaskImportResponse taskresp = client.uploadTasksUrl("new_test_batch", url);
         System.out.println(" got response for url uplaod of tasks "+ taskresp);
-
+        */
+        client.createBatch("exception_testing_batch");
 
 
 
