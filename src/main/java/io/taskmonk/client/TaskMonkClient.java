@@ -3,15 +3,14 @@ package io.taskmonk.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.taskmonk.auth.OAuthClientCredentials;
 import io.taskmonk.auth.TokenResponse;
-import io.taskmonk.clientexceptions.ForbiddenException;
-import io.taskmonk.clientexceptions.StatusConstants;
-import io.taskmonk.clientexceptions.UnhandledException;
+import io.taskmonk.clientexceptions.*;
 import io.taskmonk.entities.*;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.RedirectStrategy;
 import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -21,6 +20,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.message.BasicNameValuePair;
@@ -53,17 +53,7 @@ public class TaskMonkClient {
                 .addParameter("client_id", credentials.getClientId())
                 .addParameter("client_secret", credentials.getClientSecret());
         HttpPost post = new HttpPost(builder.build());
-        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .build();
-        httpclient.start();
-
-        Future<HttpResponse> future = httpclient.execute(post, null);
-        HttpResponse response = future.get();
-        String content = EntityUtils.toString(response.getEntity());
-        ObjectMapper mapper = new ObjectMapper();
-        TokenResponse tokenResponse = mapper.readValue(content, TokenResponse.class);
-        httpclient.close();
-        return tokenResponse;
+        return invoke(post, TokenResponse.class, false);
 
     }
     private TokenResponse getTokenResponse() throws Exception {
@@ -83,7 +73,6 @@ public class TaskMonkClient {
         URIBuilder builder = new URIBuilder(httpHost.toString() + path);
         builder.addParameters(parameters);
         HttpPost post = new HttpPost(builder.build());
-        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         post.addHeader("Content-type", contentType.toString());
         return post;
     }
@@ -94,7 +83,6 @@ public class TaskMonkClient {
         URIBuilder builder = new URIBuilder(httpHost.toString() + path)
                 .addParameters(parameters);
         HttpGet get = new HttpGet(builder.build());
-        get.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         return get;
     }
 
@@ -105,13 +93,12 @@ public class TaskMonkClient {
      * @return {@link String} returns the id of the batch
      * @throws  io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws  io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws  io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws  io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public String createBatch(String batchName) throws Exception {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch");
         HttpPost post = new HttpPost(builder.build());
-        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         post.addHeader("Content-type", "application/json");
 
         NewBatchData newBatchData = new NewBatchData(batchName);
@@ -126,9 +113,15 @@ public class TaskMonkClient {
     }
 
     private <T> T invoke(HttpUriRequest request, Class<T> clazz) throws Exception {
+        return invoke(request, clazz, true);
+    }
+    private <T> T invoke(HttpUriRequest request, Class<T> clazz, Boolean addAuthorization) throws Exception {
+        if (addAuthorization) {
+            request.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
+        }
         CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .setRedirectStrategy(new LaxRedirectStrategy())
                 .build();
-        request.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         httpclient.start();
         Future<HttpResponse> httpResponse = httpclient.execute(request, null);
         logger.debug("Invoking : {} ", request);
@@ -161,14 +154,13 @@ public class TaskMonkClient {
      * @return {@link String} - returns the id of the updated batch
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws  io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws  io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws  io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public String updateBatch(String batchId, String batchName, Short priority, String comments, List<Notification> notifications) throws Exception{
         logger.debug("updating batch  {}", batchId);
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId);
         HttpPut put = new HttpPut(builder.build());
-        put.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         put.addHeader("Content-type", "application/json");
         NewBatchData newBatchData = new NewBatchData(batchName);
         newBatchData.setComments(comments);
@@ -189,7 +181,7 @@ public class TaskMonkClient {
      * @return {@link TaskImportResponse} returns the task import response
      * @throws  io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws  io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws  io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws  io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public TaskImportResponse uploadTasks(String batchName, File file) throws Exception  {
@@ -213,7 +205,6 @@ public class TaskMonkClient {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import");
         builder.addParameter("fileType", fileType);
         HttpPost post = new HttpPost(builder.build());
-        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
 
         StringEntity stringEntity = new StringEntity(encoded);
         post.setEntity(stringEntity);
@@ -230,7 +221,7 @@ public class TaskMonkClient {
      * @return {@link TaskImportResponse} - returns the task import response
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public TaskImportResponse uploadTasksUrl(String batchName, String taskUrl, String fileType) throws  Exception {
@@ -239,7 +230,6 @@ public class TaskMonkClient {
 
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import/url");
         HttpPost post = new HttpPost(builder.build());
-        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         post.addHeader("Content-type", "application/json");
 
         ImportUrl importUrl = new ImportUrl(taskUrl, fileType);
@@ -258,7 +248,7 @@ public class TaskMonkClient {
      * @return {@link TaskImportResponse} - returns the task import response
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
 
      */
@@ -295,7 +285,7 @@ public class TaskMonkClient {
      * @return {@link TaskImportResponse} - returns the task import response
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */
@@ -303,7 +293,6 @@ public class TaskMonkClient {
     {
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import/url");
         HttpPost post = new HttpPost(builder.build());
-        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         post.addHeader("Content-type", "application/json");
         ObjectMapper mapper = new ObjectMapper();
         ImportUrl importUrl = new ImportUrl(taskUrl, fileType);
@@ -319,7 +308,7 @@ public class TaskMonkClient {
      * @return task id of the newly created task
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */
@@ -331,7 +320,6 @@ public class TaskMonkClient {
         StringEntity entity = new StringEntity(body);
 
         HttpPost post = new HttpPost(builder.build());
-        post.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         post.addHeader("Content-type", "application/json");
 
         post.setEntity(entity);
@@ -356,7 +344,7 @@ public class TaskMonkClient {
      * @param outputPath - path where the output file should be created
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */
@@ -383,9 +371,9 @@ public class TaskMonkClient {
         if(StatusConstants.StatusCode.FORBIDDEN.getCode() == statusCode)
             return new ForbiddenException(StatusConstants.StatusCode.FORBIDDEN.getDisplay());
         else  if(StatusConstants.StatusCode.INTERNALSERVERERROR.getCode() == statusCode)
-            return new ForbiddenException(StatusConstants.StatusCode.INTERNALSERVERERROR.getDisplay());
+            return new InternalServerError(StatusConstants.StatusCode.INTERNALSERVERERROR.getDisplay());
         else  if(StatusConstants.StatusCode.NOTFOUND.getCode() == statusCode)
-            return new ForbiddenException(StatusConstants.StatusCode.NOTFOUND.getDisplay());
+            return new NotFoundException(StatusConstants.StatusCode.NOTFOUND.getDisplay());
         else
             return new UnhandledException(StatusConstants.StatusCode.UNHANDLED.getDisplay());
 
@@ -399,7 +387,7 @@ public class TaskMonkClient {
      * @return {@link JobProgressResponse} - returns the job progress response
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */
@@ -416,7 +404,7 @@ public class TaskMonkClient {
      * @return {@link JobProgressResponse} - returns the job progress response
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */
@@ -435,7 +423,7 @@ public class TaskMonkClient {
      * @return {@link BatchStatus} - returns the batch status
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */
@@ -452,7 +440,7 @@ public class TaskMonkClient {
      * @return {@link Boolean} - returns true or false depending on completion of process
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */
@@ -468,7 +456,7 @@ public class TaskMonkClient {
      * @return {@link Boolean} - returns true or false depending upon upload status
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerErrorException if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */

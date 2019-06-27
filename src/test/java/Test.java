@@ -15,12 +15,12 @@ import java.util.Map;
 
 public class Test {
     public static void main(String[] args) throws Exception {
-        String projectId = "154";
+        String projectId = "169";
         /**
          * Initialize the taskmonk client witht he oauth credentials and projectId
          */
-        TaskMonkClient client = new TaskMonkClient(projectId, "localhost:9000",
-                new OAuthClientCredentials("Fxe2u1LAgT5as96s9U4ugxPMabvtAAfn", "7OXBVShSVenHVrLGYl7xMxAV3w42r6VfM1yYySsPM88i71Qtsw81J9WWAZdoPgVp"));
+        TaskMonkClient client = new TaskMonkClient(projectId, "preprod.taskmonk.io",
+                new OAuthClientCredentials("uIUSPlDMnH8gLEIrnlkdIPRE6bZYhHpw", "zsYgKGLUnftFgkASD8pndMwn3viA0IPoGKAiw6S7aVukgMWI8hGJflFs0P2QYxTg"));
 
         /*
          * Upload the tasks csv to a new batch that will be created with name batchName
