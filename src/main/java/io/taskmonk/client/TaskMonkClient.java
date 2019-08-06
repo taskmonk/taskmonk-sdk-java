@@ -9,6 +9,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.AuthenticationStrategy;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.RedirectStrategy;
 import org.apache.http.client.entity.GzipCompressingEntity;
@@ -44,6 +45,7 @@ public class TaskMonkClient {
 
 
     HttpHost httpHost;
+    HttpHost proxyHost;
     TokenResponse tokenResponse;
     String projectId;
     OAuthClientCredentials credentials;
@@ -105,7 +107,7 @@ public class TaskMonkClient {
 
         ObjectMapper mapper = new ObjectMapper();
         String body = mapper.writeValueAsString(newBatchData);
-        logger.debug("batch create content = {}", body);
+        logger.trace("batch create content = {}", body);
         StringEntity stringEntity = new StringEntity(body);
         post.setEntity(stringEntity);
 
@@ -120,11 +122,12 @@ public class TaskMonkClient {
             request.addHeader("Authorization", "Bearer " + getTokenResponse().getAccess_token());
         }
         CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .setProxy(proxyHost)
                 .setRedirectStrategy(new LaxRedirectStrategy())
                 .build();
         httpclient.start();
         Future<HttpResponse> httpResponse = httpclient.execute(request, null);
-        logger.debug("Invoking : {} ", request);
+        logger.trace("Invoking : {} ", request);
         HttpResponse response = httpResponse.get();
         try {
 
@@ -133,7 +136,7 @@ public class TaskMonkClient {
                 String content = EntityUtils.toString(response.getEntity());
                 ObjectMapper mapper = new ObjectMapper();
                 T result = mapper.readValue(content, clazz);
-                logger.debug("result {}", result);
+                logger.trace("result {}", result);
                 return result;
             } else {
                 throw handleException(response.getStatusLine().getStatusCode());
@@ -158,7 +161,6 @@ public class TaskMonkClient {
      * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
     public String updateBatch(String batchId, String batchName, Short priority, String comments, List<Notification> notifications) throws Exception{
-        logger.debug("updating batch  {}", batchId);
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId);
         HttpPut put = new HttpPut(builder.build());
         put.addHeader("Content-type", "application/json");
@@ -168,7 +170,7 @@ public class TaskMonkClient {
         newBatchData.setPriority(priority);
         ObjectMapper mapper = new ObjectMapper();
         String body = mapper.writeValueAsString(newBatchData);
-        logger.debug(" got batch content {} ", body);
+        logger.debug("update batch content {} ", body);
         StringEntity entity = new StringEntity(body);
         put.setEntity(entity);
         return invoke(put, Id.class).id;
@@ -191,7 +193,6 @@ public class TaskMonkClient {
         String path = file.getAbsolutePath();
         String fileType = FilenameUtils.getExtension(path);
 
-        logger.debug("fileType = {}", fileType);
         byte[] bytes = Files.readAllBytes(file.toPath());
         ByteArrayOutputStream arrOutputStream = new ByteArrayOutputStream();
         GZIPOutputStream zipOutputStream = new GZIPOutputStream(arrOutputStream);
@@ -200,15 +201,16 @@ public class TaskMonkClient {
         arrOutputStream.close();
         byte[] output = arrOutputStream.toByteArray();
         String encoded = Base64.getEncoder().encodeToString(output);
-
-        logger.debug("Uploading {} bytes", encoded.length());
-        URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import");
+        URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/v2/" + projectId + "/batch/" + batchId + "/tasks/import");
         builder.addParameter("fileType", fileType);
         HttpPost post = new HttpPost(builder.build());
 
         StringEntity stringEntity = new StringEntity(encoded);
         post.setEntity(stringEntity);
-        return invoke(post, TaskImportResponse.class);
+        TaskImportResponse result = invoke(post, TaskImportResponse.class);
+        logger.debug("Upload task id = {}", result.job_id);
+        result.setBatch_id(batchId);
+        return result;
 
     }
 
@@ -237,7 +239,9 @@ public class TaskMonkClient {
 
         StringEntity entity = new StringEntity(mapper.writeValueAsString(importUrl));
         post.setEntity(entity);
-        return invoke(post, TaskImportResponse.class);
+        TaskImportResponse result = invoke(post, TaskImportResponse.class);
+        result.setBatch_id(batchId);
+        return result;
     }
 
 
@@ -256,7 +260,6 @@ public class TaskMonkClient {
     {
         String path = file.getAbsolutePath();
         String fileType = FilenameUtils.getExtension(path);
-        logger.debug("filetype {}", fileType);
         byte[] bytes = Files.readAllBytes(file.toPath());
         ByteArrayOutputStream arrOutputStream = new ByteArrayOutputStream();
         GZIPOutputStream zipOutputStream = new GZIPOutputStream(arrOutputStream);
@@ -266,13 +269,14 @@ public class TaskMonkClient {
         byte[] output = arrOutputStream.toByteArray();
         String encoded = Base64.getEncoder().encodeToString(output);
 
-        logger.debug("Uploading {} bytes", encoded.length());
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId + "/tasks/import");
         builder.addParameter("fileType", fileType);
         HttpPost post = new HttpPost(builder.build());
         StringEntity stringEntity = new StringEntity(encoded);
         post.setEntity(stringEntity);
-        return invoke(post, TaskImportResponse.class);
+        TaskImportResponse result = invoke(post, TaskImportResponse.class);
+        logger.debug("Task upload job id = {}", result.job_id);
+        return result;
 
     }
 
@@ -349,25 +353,25 @@ public class TaskMonkClient {
      *
      */
     public void getBatchOutput(String batchId, String outputFormat, String outputPath) throws Exception {
-        String url = "/api/project/" + projectId + "/batch/" + batchId + "/output";
+        String url = "/api/project/v2/" + projectId + "/batch/" + batchId + "/output";
         List<NameValuePair> parameters = new ArrayList<NameValuePair>();
         parameters.add(new BasicNameValuePair("output_format", outputFormat));
         Map<String, List<String>> fieldNames = new HashMap<String, List<String>>();
-        fieldNames.put("fieldNames", new ArrayList<String>());
+        fieldNames.put("field_names", new ArrayList<String>());
         ObjectMapper mapper = new ObjectMapper();
         String content =  mapper.writeValueAsString(fieldNames);
         HttpPost post = getHttpPost(url, parameters, ContentType.APPLICATION_JSON);
         post.setEntity(new StringEntity(content));
         BatchOutput batchOutput = invoke(post, BatchOutput.class);
-        logger.debug("batchOutput = {}", batchOutput);
 
-        waitForCompletion(batchOutput.getJobId());
-        downloadFile(batchOutput.getFileUrl(), outputPath);
+        waitForCompletion(batchOutput.getjob_id());
+        downloadFile(batchOutput.getfile_url(), outputPath);
 
     }
 
     private  Exception handleException(int statusCode)   {
 
+        logger.error("status code = {}", statusCode);
         if(StatusConstants.StatusCode.FORBIDDEN.getCode() == statusCode)
             return new ForbiddenException(StatusConstants.StatusCode.FORBIDDEN.getDisplay());
         else  if(StatusConstants.StatusCode.INTERNALSERVERERROR.getCode() == statusCode)
@@ -375,7 +379,7 @@ public class TaskMonkClient {
         else  if(StatusConstants.StatusCode.NOTFOUND.getCode() == statusCode)
             return new NotFoundException(StatusConstants.StatusCode.NOTFOUND.getDisplay());
         else
-            return new UnhandledException(StatusConstants.StatusCode.UNHANDLED.getDisplay());
+            return new UnhandledException("Got status code : " + statusCode);
 
     }
 
@@ -456,7 +460,7 @@ public class TaskMonkClient {
      * @return {@link Boolean} - returns true or false depending upon upload status
      * @throws io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
      * @throws io.taskmonk.clientexceptions.NotFoundException if object not found
-     * @throws io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
+     * @throws io.taskmonk.clientexceptions.InternalServerError if an intfieldNamesernal server error occurs
      * @throws io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      *
      */
@@ -476,5 +480,13 @@ public class TaskMonkClient {
         this.httpHost = HttpHost.create(server);
     }
 
+    public TaskMonkClient(String projectId, String server, String proxy, OAuthClientCredentials credentials) {
+        this.projectId = projectId;
+        this.credentials = credentials;
+        this.httpHost = HttpHost.create(server);
+        if (proxy != null) {
+            this.proxyHost = HttpHost.create(proxy);
+        }
+    }
 
 }

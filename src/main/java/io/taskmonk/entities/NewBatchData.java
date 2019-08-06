@@ -1,8 +1,11 @@
 package io.taskmonk.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class NewBatchData {
     String batch_name;
     Short priority = 1;

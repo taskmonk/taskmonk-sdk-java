@@ -1,8 +1,11 @@
 package io.taskmonk.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Task {
     public String externalId;
     public String project_id;

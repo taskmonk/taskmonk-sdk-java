@@ -4,30 +4,30 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BatchOutput {
-    String fileUrl;
-    String jobId;
+    String file_url;
+    String job_id;
 
     public BatchOutput() {
 
     }
-    public String getFileUrl() {
-        return fileUrl;
+    public String getfile_url() {
+        return file_url;
     }
 
-    public void setFileUrl(String fileUrl) {
-        this.fileUrl = fileUrl;
+    public void setfile_url(String file_url) {
+        this.file_url = file_url;
     }
 
-    public String getJobId() {
-        return jobId;
+    public String getjob_id() {
+        return job_id;
     }
 
-    public void setJobId(String jobId) {
-        this.jobId = jobId;
+    public void setjob_id(String job_id) {
+        this.job_id = job_id;
     }
 
     @Override
     public String toString() {
-        return "fileUrl = " + fileUrl + "; jobId = " + jobId;
+        return "file_url = " + file_url + "; job_id = " + job_id;
     }
 }

@@ -1,8 +1,11 @@
 package io.taskmonk.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * Bean providing job response details
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class JobProgressResponse {
     public Integer completed;
     public Integer total;

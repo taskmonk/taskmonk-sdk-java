@@ -1,7 +1,10 @@
 package io.taskmonk.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Notification {
     String notificationType;
     Map<String, String> metaData;

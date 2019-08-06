@@ -1,5 +1,8 @@
 package io.taskmonk.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BatchStatus {
     Integer new_count;
     Integer in_progress;

@@ -1,14 +1,28 @@
 package io.taskmonk.auth;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
+
 public class TokenResponse {
+    private static final Logger logger = LoggerFactory.getLogger(TokenResponse.class);
     String token_type;
     String access_token;
     String refresh_token;
     Long expires_in;
+    LocalDateTime expires_at = LocalDateTime.now().minusDays(1);
 
     public Boolean isExpired() {
-        return true;
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(expires_at)) {
+            return true;
+        }
+        return false;
     }
+
     public String getToken_type() {
         return token_type;
     }
@@ -39,6 +53,7 @@ public class TokenResponse {
 
     public void setExpires_in(Long expires_in) {
         this.expires_in = expires_in;
+        setExpiry();
     }
 
     public TokenResponse() {
@@ -52,7 +67,16 @@ public class TokenResponse {
         this.access_token = access_token;
         this.refresh_token = refresh_token;
         this.expires_in = expires_in;
+        setExpiry();
+    }
+    private void setExpiry() {
+        LocalDateTime now = LocalDateTime.now();
+        expires_at = now.plusSeconds(expires_in - 30);
     }
 
+    @Override
+    public String toString() {
+        return "access_token = " + access_token + "; refresh_token = {}" + refresh_token + "; expires_in = " + expires_in;
+    }
 }
 

@@ -1,41 +1,46 @@
 package io.taskmonk.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskImportResponse {
+    public String job_id;
+    public String batch_id;
+    // For backward compatibility
     public String batchId;
-    public String excelJobId;
-    public String jobId;
+
+    public String getBatch_id() {
+        return batch_id;
+    }
+
+    public void setBatch_id(String batch_id) {
+        this.batch_id = batch_id;
+        this.batchId = batch_id;
+    }
+
+    public String getJob_id() {
+        return job_id;
+    }
+
+    public void setJob_id(String job_id) {
+        this.job_id = job_id;
+    }
 
     public TaskImportResponse() {
 
     }
-    public TaskImportResponse(String batchId, String excelJobId, String jobId) {
-        this.batchId = batchId;
-        this.excelJobId = excelJobId;
-        this.jobId = jobId;
+    public TaskImportResponse(String job_id) {
+        this.job_id = job_id;
+    }
+    public TaskImportResponse(String job_id, String batch_id) {
+        this.job_id = job_id;
+        this.batchId = batch_id;
+        this.batch_id = batch_id;
     }
 
-    public String getBatchId() {
-        return batchId;
-    }
-
-    public void setBatchId(String batchId) {
-        this.batchId = batchId;
-    }
-
-    public String getJobId() {
-        return jobId;
-    }
-
-    public String getExcelJobId() {
-        return excelJobId;
-    }
-
-    public void setExcelJobId(String excelJobId) {
-        this.excelJobId = excelJobId;
-    }
-
-    public void setJobId(String jobId) {
-        this.jobId = jobId;
+    @Override
+    public String toString() {
+        return "job_id = " + job_id + "; batchId = {}" + batchId + "; batch_id = " + batch_id;
     }
 }
