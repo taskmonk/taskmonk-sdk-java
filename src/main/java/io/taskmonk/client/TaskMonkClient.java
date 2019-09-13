@@ -123,6 +123,7 @@ public class TaskMonkClient {
         }
         CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
                 .setProxy(proxyHost)
+                .useSystemProperties()
                 .setRedirectStrategy(new LaxRedirectStrategy())
                 .build();
         httpclient.start();
