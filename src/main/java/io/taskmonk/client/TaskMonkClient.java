@@ -90,6 +90,30 @@ public class TaskMonkClient {
 
 
     /**
+     * Create a new batch in an existing project with parameters set
+     * @param newBatchData {@link NewBatchData} New batch information
+     * @return {@link String} returns the id of the batch
+     * @throws  io.taskmonk.clientexceptions.ForbiddenException if the access is unauthorized
+     * @throws  io.taskmonk.clientexceptions.NotFoundException if object not found
+     * @throws  io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
+     * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
+     */
+    public String createBatch(NewBatchData newBatchData) throws Exception {
+        logger.debug("Creating new batch " + newBatchData);
+        URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch");
+        HttpPost post = new HttpPost(builder.build());
+        post.addHeader("Content-type", "application/json");
+
+        ObjectMapper mapper = new ObjectMapper();
+        String body = mapper.writeValueAsString(newBatchData);
+        logger.trace("batch create content = {}", body);
+        StringEntity stringEntity = new StringEntity(body);
+        post.setEntity(stringEntity);
+
+        return invoke(post, Id.class).id;
+    }
+
+    /**
      * Create a new batch in an existing project
      * @param batchName . name of the batch to be created
      * @return {@link String} returns the id of the batch
@@ -161,7 +185,7 @@ public class TaskMonkClient {
      * @throws  io.taskmonk.clientexceptions.InternalServerError if an internal server error occurs
      * @throws  io.taskmonk.clientexceptions.UnhandledException if unhandled exception occurs
      */
-    public String updateBatch(String batchId, String batchName, Short priority, String comments, List<Notification> notifications) throws Exception{
+    public String updateBatch(String batchId, String batchName, Integer priority, String comments, List<Notification> notifications) throws Exception{
         URIBuilder builder = new URIBuilder(httpHost.toString() + "/api/project/" + projectId + "/batch/" + batchId);
         HttpPut put = new HttpPut(builder.build());
         put.addHeader("Content-type", "application/json");
